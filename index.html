@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Capture App</title>
+</head>
+<body>
+    <h1>Photo Capture App</h1>
+    <label for="num_photos">Anzahl der Fotos:</label>
+    <input type="number" id="num_photos" value="1" min="1" max="100">
+    <br><br>
+    <button onclick="startPhotoCapture()">Start Photos</button>
+    <br><br>
+    <div id="result"></div>
+    <div id="photos"></div>
+
+    <script>
+        async function startPhotoCapture() {
+            const num_photos = document.getElementById('num_photos').value;
+            document.getElementById('result').innerText = `Taking ${num_photos} photos...`;
+
+            for (let i = 0; i < num_photos; i++) {
+                await capturePhoto();
+            }
+            document.getElementById('result').innerText = `${num_photos} photos taken and saved.`;
+        }
+
+        async function capturePhoto() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const track = stream.getVideoTracks()[0];
+                const imageCapture = new ImageCapture(track);
+                const bitmap = await imageCapture.grabFrame();
+
+                const canvas = document.createElement('canvas');
+                canvas.width = bitmap.width;
+                canvas.height = bitmap.height;
+                canvas.getContext('2d').drawImage(bitmap, 0, 0);
+
+                const photoURL = canvas.toDataURL();
+                savePhoto(photoURL);
+
+                track.stop();
+            } catch (err) {
+                console.error("Error: " + err);
+                document.getElementById('result').innerText = "Error taking photo.";
+            }
+        }
+
+        function savePhoto(url) {
+            const photos = JSON.parse(localStorage.getItem('photos') || '[]');
+            photos.push(url);
+            localStorage.setItem('photos', JSON.stringify(photos));
+            displayPhotos();
+        }
+
+        function displayPhotos() {
+            const photos = JSON.parse(localStorage.getItem('photos') || '[]');
+            const container = document.getElementById('photos');
+            container.innerHTML = '';
+            photos.forEach((url, index) => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = `Photo ${index + 1}`;
+                img.style.width = '200px';
+                img.style.margin = '10px';
+                container.appendChild(img);
+            });
+        }
+
+        window.onload = displayPhotos;
+    </script>
+</body>
+</html>
