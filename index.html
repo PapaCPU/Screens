@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Capture App</title>
+    <style>
+        #video {
+            display: none;
+        }
+        #canvas {
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <h1>Photo Capture App</h1>
@@ -14,6 +22,8 @@
     <br><br>
     <div id="result"></div>
     <div id="photos"></div>
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" width="640" height="480"></canvas>
 
     <script>
         async function startPhotoCapture() {
@@ -28,20 +38,19 @@
 
         async function capturePhoto() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const track = stream.getVideoTracks()[0];
-                const imageCapture = new ImageCapture(track);
-                const bitmap = await imageCapture.grabFrame();
+                const video = document.getElementById('video');
+                const canvas = document.getElementById('canvas');
+                const context = canvas.getContext('2d');
 
-                const canvas = document.createElement('canvas');
-                canvas.width = bitmap.width;
-                canvas.height = bitmap.height;
-                canvas.getContext('2d').drawImage(bitmap, 0, 0);
+                if (!video.srcObject) {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    video.srcObject = stream;
+                    await new Promise((resolve) => (video.onloadedmetadata = resolve));
+                }
 
-                const photoURL = canvas.toDataURL();
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const photoURL = canvas.toDataURL('image/png');
                 savePhoto(photoURL);
-
-                track.stop();
             } catch (err) {
                 console.error("Error: " + err);
                 document.getElementById('result').innerText = "Error taking photo.";
